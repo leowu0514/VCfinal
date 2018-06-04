@@ -17,15 +17,15 @@ def model(pair):
 		# inp[i] = Input((144, 176, 3))
 
 		# CNNencoder
-		x = Conv2D(16, (3,3), activation='relu', padding='same')(inp[i]) # 144 x 176 x 16
+		x = Conv2D(8, (3,3), activation='relu', padding='same')(inp[i]) # 144 x 176 x 16
 		x = MaxPooling2D((2,2))(x) # 72 x 88 x 16
 		x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
 		x = MaxPooling2D((2,2))(x) # 36 x 44 x 16
-		x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+		x = Conv2D(32, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
 		x = MaxPooling2D((2,2))(x) # 18 x 22 x 8
-		x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 8
+		x = Conv2D(64, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 8
 		x = MaxPooling2D((2,2))(x) # 9 x 11 x 8
-		x = Conv2D(4, (3,3), activation='relu', padding='same')(x) # 9 x 11 x 4
+		x = Conv2D(128, (3,3), activation='relu', padding='same')(x) # 9 x 11 x 4
 		# print(x.shape)
 		tmp[i] = Flatten()(x)
 
@@ -37,11 +37,11 @@ def model(pair):
 	flat = Reshape((9,11,4))(flat)
 
 	# CNNdecoder
-	x = Conv2D(4, (3,3), activation='relu', padding='same')(flat) # 9 x 11 x 4
+	x = Conv2D(128, (3,3), activation='relu', padding='same')(flat) # 9 x 11 x 4
 	x = UpSampling2D((2,2))(x) # 18 x 22 x 4
-	x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 8
+	x = Conv2D(64, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 8
 	x = UpSampling2D((2,2))(x) # 36 x 44 x 8
-	x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+	x = Conv2D(32, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
 	x = UpSampling2D((2,2))(x) # 72 x 88 x 8
 	x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
 	x = UpSampling2D((2,2))(x) # 144 x 176 x 16
@@ -50,7 +50,8 @@ def model(pair):
 	# print(inp)
 
 	autoencoder = Model(inp, out)
-	autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
+	# autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
+	autoencoder.compile(optimizer=RMSprop(), loss='mean_squared_error')
 	return autoencoder
 
 PAIR_NUM = 5
@@ -91,8 +92,8 @@ for i in range(len(data)):
 		count += 1
 		
 print("Split train/valid/test")
-T = 8500
-V = 9000
+T = 8647
+V = 9696
 Y_x_train = [X[i][:T][:,:,:,0].reshape((T,144,176,1)) for i in range(PAIR_NUM)]
 Y_y_train = Y[:T][:,:,:,0].reshape((T,144,176,1))
 Y_x_valid = [X[i][T:V][:,:,:,0].reshape((V-T,144,176,1)) for i in range(PAIR_NUM)]
@@ -100,14 +101,14 @@ Y_y_valid = Y[T:V][:,:,:,0].reshape((V-T,144,176,1))
 Y_x_test = [X[i][V:][:,:,:,0].reshape((10856-V,144,176,1)) for i in range(PAIR_NUM)]
 Y_y_test = Y[V:][:,:,:,0].reshape((10856-V,144,176,1))
 
-Cb_x_train_Y = [X[i][:T][:,:,:,1].reshape((T,144,176,1)) for i in range(PAIR_NUM)]
+Cb_x_train = [X[i][:T][:,:,:,1].reshape((T,144,176,1)) for i in range(PAIR_NUM)]
 Cb_y_train = Y[:T][:,:,:,1].reshape((T,144,176,1))
 Cb_x_valid = [X[i][T:V][:,:,:,1].reshape((V-T,144,176,1)) for i in range(PAIR_NUM)]
 Cb_y_valid = Y[T:V][:,:,:,1].reshape((V-T,144,176,1))
 Cb_x_test = [X[i][V:][:,:,:,1].reshape((10856-V,144,176,1)) for i in range(PAIR_NUM)]
 Cb_y_test = Y[V:][:,:,:,1].reshape((10856-V,144,176,1))
 
-Cr_x_train_Y = [X[i][:T][:,:,:,2].reshape((T,144,176,1)) for i in range(PAIR_NUM)]
+Cr_x_train = [X[i][:T][:,:,:,2].reshape((T,144,176,1)) for i in range(PAIR_NUM)]
 Cr_y_train = Y[:T][:,:,:,2].reshape((T,144,176,1))
 Cr_x_valid = [X[i][T:V][:,:,:,2].reshape((V-T,144,176,1)) for i in range(PAIR_NUM)]
 Cr_y_valid = Y[T:V][:,:,:,2].reshape((V-T,144,176,1))
@@ -116,12 +117,22 @@ Cr_y_test = Y[V:][:,:,:,2].reshape((10856-V,144,176,1))
 
 print("Training")
 modelY = model(PAIR_NUM)
-# modelCb = model(PAIR_NUM)
-# modelCr = model(PAIR_NUM)
-history = modelY.fit(Y_x_train, Y_y_train, nb_epoch=200, validation_data=(Y_x_valid, Y_y_valid))
-
+historyY = modelY.fit(Y_x_train, Y_y_train, nb_epoch=50, validation_data=(Y_x_valid, Y_y_valid))
 print("Saving model")
-model.save('Y_autoencoder.h5')
+modelY.save('Y_autoencoder.h5')
+
+modelCb = model(PAIR_NUM)
+historyCb = modelCb.fit(Cb_x_train, Cb_y_train, nb_epoch=50, validation_data=(Cb_x_valid, Cb_y_valid))
+print("Saving model")
+modelCb.save('Cb_autoencoder.h5')
+
+modelCr = model(PAIR_NUM)
+historyCr = modelCr.fit(Cr_x_train, Cr_y_train, nb_epoch=50, validation_data=(Cr_x_valid, Cr_y_valid))
+print("Saving model")
+modelCr.save('Cr_autoencoder.h5')
+
+
+
 
 
 
