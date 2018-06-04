@@ -7,7 +7,7 @@ frame_size = video_shape[0] * video_shape[1]
 frame_data_size = int(frame_size * 1.5)
 subsample_shape = (video_shape[0], video_shape[1]//4)
 
-DATA_DIR = "data/"
+DATA_DIR = "../data/"
 
 
 def load_yuv(path):
