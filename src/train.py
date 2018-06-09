@@ -33,7 +33,7 @@ def model2(): # only CNN
 	# autoencoder.compile(optimizer=RMSprop(), loss='mean_squared_error')
 	return autoencoder
 
-def model3(pair):
+def model_ratio2(pair):
 	inp = [Input((144, 176, 1)) for i in range(pair)]
 	tmp = [[] for i in range(pair)]
 	flat = [[] for i in range(pair)]
@@ -51,10 +51,11 @@ def model3(pair):
 		# tmp[i] = Dense(36*44)(tmp[i])
 	
 	frames = concatenate(tmp, axis=1)
-	weight = concatenate(flat, axis=-1)
+	weight = concatenate(flat, axis=1)
 	# merge = average(tmp)
-	print(tmp[0].shape, weight.shape, frames.shape)
+	print(weight.shape, frames.shape)
 	merge = dot([weight, frames], 1)
+	print(merge.shape)
 	merge = Reshape((36,44,8))(merge)
 
 	# CNNdecoder
@@ -70,6 +71,97 @@ def model3(pair):
 	# autoencoder.compile(optimizer=RMSprop(), loss='mean_squared_error')
 	return autoencoder
 
+def model_ratio8(pair):
+	inp = [Input((144, 176, 1)) for i in range(pair)]
+	tmp = [[] for i in range(pair)]
+	flat = [[] for i in range(pair)]
+	for i in range(pair):
+		# CNNencoder
+		x = Conv2D(32, (3,3), activation='relu', padding='same')(inp[i]) # 144 x 176 x 32
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+		
+		x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+		
+		x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+
+		tmp[i] = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 8
+		tmp[i] = Reshape((1,18*22*8))(tmp[i])
+		flat[i] = Flatten()(tmp[i])
+		flat[i] = Dense(1)(flat[i])
+	
+	frames = concatenate(tmp, axis=1)
+	weight = concatenate(flat, axis=1)
+	# merge = average(tmp)
+	print(weight.shape, frames.shape)
+	merge = dot([weight, frames], 1)
+	print(merge.shape)
+	merge = Reshape((18,22,8))(merge)
+
+	# CNNdecoder
+	x = UpSampling2D((2,2))(merge)
+	x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+	x = UpSampling2D((2,2))(x)
+	x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
+	x = UpSampling2D((2,2))(x)
+	out = Conv2D(1, (3,3), activation='sigmoid', padding='same')(x) # 144 x 176 x 1
+
+	# print(inp)
+
+	autoencoder = Model(inp, out)
+	autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
+	# autoencoder.compile(optimizer=RMSprop(), loss='mean_squared_error')
+	return autoencoder
+
+def model_ratio16(pair):
+	inp = [Input((144, 176, 1)) for i in range(pair)]
+	tmp = [[] for i in range(pair)]
+	flat = [[] for i in range(pair)]
+	for i in range(pair):
+		# CNNencoder
+		x = Conv2D(32, (3,3), activation='relu', padding='same')(inp[i]) # 144 x 176 x 32
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+		
+		x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+		
+		x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+		x = BatchNormalization()(x)
+		x = MaxPooling2D((2,2), padding='same')(x)
+
+		tmp[i] = Conv2D(4, (3,3), activation='relu', padding='same')(x) # 18 x 22 x 4
+		tmp[i] = Reshape((1,18*22*4))(tmp[i])
+		flat[i] = Flatten()(tmp[i])
+		flat[i] = Dense(1)(flat[i])
+	
+	frames = concatenate(tmp, axis=1)
+	weight = concatenate(flat, axis=1)
+	# merge = average(tmp)
+	print(weight.shape, frames.shape)
+	merge = dot([weight, frames], 1)
+	print(merge.shape)
+	merge = Reshape((18,22,4))(merge)
+
+	# CNNdecoder
+	x = UpSampling2D((2,2))(merge)
+	x = Conv2D(8, (3,3), activation='relu', padding='same')(x) # 36 x 44 x 8
+	x = UpSampling2D((2,2))(x)
+	x = Conv2D(16, (3,3), activation='relu', padding='same')(x) # 72 x 88 x 16
+	x = UpSampling2D((2,2))(x)
+	out = Conv2D(1, (3,3), activation='sigmoid', padding='same')(x) # 144 x 176 x 1
+
+	# print(inp)
+
+	autoencoder = Model(inp, out)
+	autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
+	# autoencoder.compile(optimizer=RMSprop(), loss='mean_squared_error')
+	return autoencoder
 
 PAIR_NUM = 3
 print("Loading data")
@@ -134,13 +226,13 @@ Cr_x_test = [X[i][V:][:,:,:,2].reshape((10856-V,144,176,1)) for i in range(PAIR_
 Cr_y_test = Y[V:][:,:,:,2].reshape((10856-V,144,176,1))
 
 print("Training")
-modelY = model3(PAIR_NUM)
+modelY = model_ratio16(PAIR_NUM)
 stop = []
 stop.append(EarlyStopping(monitor='val_loss', patience=10, mode='min'))
 stop.append(ModelCheckpoint("Y_best.h5", monitor='val_loss', save_best_only=True, mode='min', period=1))
 historyY = modelY.fit(Y_x_train, Y_y_train, batch_size=64, nb_epoch=100, callbacks=stop, validation_data=(Y_x_test, Y_y_test))
 print("Saving model")
-modelY.save('Y_autoencoder_10.h5')
+modelY.save('ratio16.h5')
 
 # modelCb = model(PAIR_NUM)
 # historyCb = modelCb.fit(Cb_x_train, Cb_y_train, nb_epoch=50, validation_data=(Cb_x_valid, Cb_y_valid))
