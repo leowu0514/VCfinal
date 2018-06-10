@@ -44,9 +44,8 @@ def load_all_yuv(data_dir):
 
 def yuv_to_rgb(yuv):
     rgb = np.zeros_like(yuv)
-    rgb[:, :, :, 0] = yuv[:, :, :, 0] + 1.402 * (yuv[:, :, :, 2] - 128)
-    rgb[:, :, :, 1] = yuv[:, :, :, 0] - 0.344 * (yuv[:, :, :, 1] - 128) - 0.714 * (yuv[:, :, :, 2] - 128)
-    rgb[:, :, :, 2] = yuv[:, :, :, 0] + 1.772 * (yuv[:, :, :, 1] - 128)
+    rgb[..., 0] = yuv[..., 0] + 1.402 * (yuv[..., 2] - 128)
+    rgb[..., 1] = yuv[..., 0] - 0.344 * (yuv[..., 1] - 128) - 0.714 * (yuv[..., 2] - 128)
+    rgb[..., 2] = yuv[..., 0] + 1.772 * (yuv[..., 1] - 128)
                                                  
     return np.clip(np.round(rgb), 0, 255).astype(np.uint8)
-
