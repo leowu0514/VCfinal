@@ -67,7 +67,7 @@ def yuv_arr_to_yuv_file(yuv, filename):
     yuv = np.concatenate([Y, U, V], axis=1).reshape([-1])
 
     with open(filename, "wb") as fout:
-        fout.write(bytes(list(aa)))
+        fout.write(bytes(list(yuv)))
 
     return
 
