@@ -75,7 +75,7 @@ def compute_PSNR(in1, in2):
     in1 = yuv_to_rgb(in1)
     in2 = yuv_to_rgb(in2)
 
-    diff = np.abs(in1 - in2)
-    mse = np.sqrt(diff).sum() / reduce(lambda x, y: x*y, in1.shape, 1)
+    diff = in1 - in2
+    mse = np.square(diff).sum() / reduce(lambda x, y: x*y, in1.shape, 1)
     PSNR = 10 * np.log10(255 * 255 / mse)
     return PSNR
