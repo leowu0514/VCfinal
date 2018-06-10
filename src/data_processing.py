@@ -1,6 +1,7 @@
 import numpy as np
 import glob
 import os
+from functools import reduce
 
 video_shape = (144, 176)
 frame_size = video_shape[0] * video_shape[1]
