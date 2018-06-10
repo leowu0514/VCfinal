@@ -21,13 +21,13 @@ def load_yuv(path):
     data = data.reshape([frame_num, -1])
     
     Y = data[:, :frame_size].reshape([frame_num, video_shape[0], video_shape[1]])
-    Cb = data[:, frame_size:frame_size*5//4].reshape([frame_num, subsample_shape[0], subsample_shape[1]]).repeat(2, axis=2).repeat(2, axis=1)
-    Cr = data[:, frame_size*5//4:frame_size*3//2].reshape([frame_num, subsample_shape[0], subsample_shape[1]]).repeat(2, axis=2).repeat(2, axis=1)
+    U = data[:, frame_size:frame_size*5//4].reshape([frame_num, subsample_shape[0], subsample_shape[1]]).repeat(2, axis=2).repeat(2, axis=1)
+    V = data[:, frame_size*5//4:frame_size*3//2].reshape([frame_num, subsample_shape[0], subsample_shape[1]]).repeat(2, axis=2).repeat(2, axis=1)
 
     yuv_array = np.zeros([frame_num, *video_shape, 3])
     yuv_array[:, :, :, 0] = Y
-    yuv_array[:, :, :, 1] = Cb
-    yuv_array[:, :, :, 2] = Cr
+    yuv_array[:, :, :, 1] = U
+    yuv_array[:, :, :, 2] = V
 
     return yuv_array
 
@@ -49,3 +49,24 @@ def yuv_to_rgb(yuv):
     rgb[..., 2] = yuv[..., 0] + 1.772 * (yuv[..., 1] - 128)
                                                  
     return np.clip(np.round(rgb), 0, 255).astype(np.uint8)
+
+
+def yuv_arr_to_yuv_file(yuv, filename):
+    frame_num = yuv.shape[0]
+    yuv = yuv.round().astype(np.uint8)
+
+    Y = yuv[..., 0]
+    U = yuv[:, ::2, ::2, 1]
+    V = yuv[:, ::2, ::2, 2]
+
+    Y = Y.reshape([frame_num, -1])
+    U = U.reshape([frame_num, -1])
+    V = V.reshape([frame_num, -1])
+
+    yuv = np.concatenate([Y, U, V], axis=1).reshape([-1])
+
+    with open(filename, "wb") as fout:
+        fout.write(bytes(list(aa)))
+
+    return
+
