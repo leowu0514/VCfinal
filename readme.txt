@@ -2,7 +2,7 @@ Folder structure:
 .
 ├── data
 │   ├── akiyo_qcif.yuv
-|	├── ...
+|   ├── ...
 └── src
     ├── data_processing.py
     ├── test.py
